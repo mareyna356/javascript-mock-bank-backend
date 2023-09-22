@@ -1,2 +1,12 @@
 # javascript-mock-bank-backend
-My very first JavaScript back-end (made with Express.js), made for my JavaScript course in early 2021: a REST API for a basic mock bank system. This API obtains data from, and writes data into, a MySQL database.
+My very first JavaScript back-end (made with [Express.js](https://expressjs.com/) and [Sequelize](https://sequelize.org/)), made for my JavaScript course during my 6th semester at the Autonomous University of Baja California (February - May, 2021): a REST API for a basic mock bank system. This API provides services to my [front-end](https://github.com/mareyna356/javascript-mock-bank-frontend) in the form of JSON objects by obtaining data from, and writing data into, a [MySQL](https://www.mysql.com/) database, thus you'll need MySQL installed on your computer.
+
+This API utilizes HTTPS, so you require an SSL certificate and private key for it to execute. I utilized [OpenSSL](https://www.openssl.org/) to generate my self-signed certificate and private key. The certificate and private key must be named ***certificate.crt*** and ***private.key*** respectively, and both must be present on the same level as [***app.js***](app.js). The required names for the certificate and the private key can be changed, if you so wish, in [***app.js***](app.js). If the front-end throws a "**Cross-Origin Request Blocked**" error, which prevents the front-end from interacting with the back-end, then it's necessary to first access the back-end through your browser and manually accept the self-signed certificate.
+
+As I've mentioned previously, the back-end needs to connect to a MySQL database. The configuration for this connection can be found in [***config/config.json***](config/config.json), where you'll have to modify the "**development**" credentials to establish the connection to your MySQL database. Whichever MySQL user you choose needs to have all privileges for the chosen database.
+
+The [***migrations***](migrations) folder contains four migrations files that allow you to create the necessary tables in the MySQL database by executing the command `npx sequelize-cli db:migrate`. If you wish to erase these tables later on, execute `npx sequelize-cli db:migrate:undo:all`.
+
+The [***seeders***](seeders) folder contains two seeders files that allow you to insert initial testing data into the MySQL database by executing the command `npx sequelize-cli db:seed:all`. Of course, for this data to be inserted into the database, the tables from the [***migrations***](migrations) folder must be already created. To erase this initial data from the database, execute `npx sequelize-cli db:seed:undo:all`.
+
+To run the back-end, execute `node app.js`.
