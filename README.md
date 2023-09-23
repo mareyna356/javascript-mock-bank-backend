@@ -10,3 +10,172 @@ The [***migrations***](migrations) folder contains four migrations files that al
 The [***seeders***](seeders) folder contains two seeders files that allow you to insert initial testing data into the MySQL database by executing the command `npx sequelize-cli db:seed:all`. Of course, for this data to be inserted into the database, the tables from the [***migrations***](migrations) folder must be already created. To erase this initial data from the database, execute `npx sequelize-cli db:seed:undo:all`.
 
 To run the back-end, execute `node app.js`.
+
+## Routes for HTTP requests
+
+All HTTP requests to this API return JSON objects (except for `GET /`, which returns a string). All the POST, PUT and PATCH requests require JSON objects as their payload bodies.
+
+NOTE: "id" in the payload body JSONs of the PUT requests refer to "claveCuenta" and "claveCuentahabiente" in the MySQL tables, not the fields literally called "id" from those tables. Giving the **cuenta** and **cuentahabientes** tables an "id" field and separate "claveCuenta"/"claveCuentahabiente" fields was a request from my professor, but for the sake of simplicity I decided to shorten both to just "id" in the JSONs that have to be sent in PUT requests.
+
+### No token required
+
+#### To get the API instructions: `GET /`
+Returns a string object.
+
+#### To log in: `POST /login`
+Body:
+```
+{
+  "username": string,
+  "password": string
+}
+```
+Response:
+```
+{
+  "msg": string,
+  "token": string
+}
+```
+
+### Token required
+All the following requests require the login token in their headers as shown below:
+```
+Authorization: Bearer [token]
+```
+
+#### To get all login users: `GET /users`
+Response (an array of JSONs with the following format):
+```
+{
+  "id": number,
+  "username": string,
+  "password": string,
+  "createdAt": string,
+  "updatedAt": string
+}
+```
+The response will be an empty array instead if there are no users.
+
+#### Create a new account holder (cuentahabiente): `POST /cuentahabientes`
+Body:
+```
+{
+  "id": number,
+  "nombre": string,
+  "edad": number
+}
+```
+Response (the same new cuentahabiente that was just registered but as it shows up in MySQL):
+```
+{
+  "id": number,
+  "claveCuentahabiente": number,
+  "nombre": string,
+  "edad": number,
+  "createdAt": string,
+  "updatedAt": string
+}
+```
+
+#### Get all account holders: `GET /cuentahabientes`
+Response (an array of JSONs with the following format):
+```
+{
+  "claveCuentahabiente": number,
+  "nombre": string,
+  "edad": number,
+  "cuentas": array of JSONs with the following format
+              {
+                "claveCuenta": number,
+                "saldo": number
+              }
+}
+```
+The response will be an empty array instead if there are no account holders.
+The array of "cuentas" will be empty if there are no accounts associated to that specific account holder.
+
+#### Get a specific account holder by its id (claveCuentahabiente): `GET /cuentahabientes/:id`
+Response:
+```
+{
+  "claveCuentahabiente": number,
+  "nombre": string,
+  "edad": number,
+  "cuentas": array of JSONs with the following format
+              {
+                "claveCuenta": number,
+                "saldo": number
+              }
+}
+```
+The array of "cuentas" will be empty if there are no accounts associated.
+
+#### Change the name and age of an account holder specified by its id (claveCuentahabiente): `PUT /cuentahabientes/:id`
+Body:
+```
+{
+  "nombre": string,
+  "edad": number
+}
+```
+Response (the same cuentahabiente that was just modified but as it shows up in MySQL):
+```
+{
+  "id": number,
+  "claveCuentahabiente": number,
+  "nombre": string,
+  "edad": number,
+  "createdAt": string,
+  "updatedAt": string
+}
+```
+
+#### Change the name and/or age of an account holder specified by its id (claveCuentahabiente): `PATCH /cuentahabientes/:id`
+Body (it can include both of the keys, "nombre" and "edad", or only one of them):
+```
+{
+  "nombre": string,
+  "edad": number
+}
+```
+Response (the same cuentahabiente that was just modified but as it shows up in MySQL):
+```
+{
+  "id": number,
+  "claveCuentahabiente": number,
+  "nombre": string,
+  "edad": number,
+  "createdAt": string,
+  "updatedAt": string
+}
+```
+
+#### Associate an account to the account holder of the specified id (claveCuentahabiente): `PATCH /cuentahabientes/:id/asocia`
+Body ("idCuenta" is the "claveCuenta" of the account to associate):
+```
+{
+  "idCuenta": number
+}
+```
+Response (an array that contains the account holder and the account that were just associated with each other):
+```
+[
+  {
+    "id": number,
+    "claveCuentahabiente": number,
+    "nombre": string,
+    "edad": number,
+    "createdAt": string,
+    "updatedAt": string
+  },
+  {
+    "id": number,
+    "claveCuenta": number,
+    "saldo": numbher,
+    "createdAt": string,
+    "updatedAt": string
+  }
+]
+```
+
