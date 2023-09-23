@@ -11,16 +11,38 @@ The [***seeders***](seeders) folder contains two seeders files that allow you to
 
 To run the back-end, execute `node app.js`.
 
+## MySQL Tables
+
+### users
+
+Users are used to log in to the bank system. They consist of an "**id**", a "**username**", and a "**password**". The "**createdAt**" and "**updatedAt**" fields are created automatically by the Sequelize ORM.
+
+### cuenta
+
+This table holds bank accounts. The table in theory should be called "cuentas", but Sequelize's naming strategy didn't work it out correctly. This table's fields are "**id**", "**claveCuenta**" (this is another type of id for the accounts, this is the id that the user is actually supposed to use to identify accounts for any operation in the front-end and the back-end), "**saldo**" (balance), "**createdAt**" and "**updatedAt**".
+
+### cuentahabientes
+
+This table holds bank account holders. This table's fields are "**id**", "**claveCuentahabiente**" (this is another type of id for the account holders, this is the id that the user is actually supposed to use to identify account holders for any operation in the front-end and the back-end), "**nombre**" (name), "**edad**" (age), "**createdAt**" and "**updatedAt**".
+
+### cuentahabientecuentas
+
+This table handles the many-to-many relationships between accounts and account holders. Its fields are "**id**", "**cuentahabienteId**" (this has to be the account holder's actual real "id", not the "claveCuentahabiente"), "**cuentumId**" (this has to be the account's actual real "id", not the "claveCuenta"; this field in theory should be named "cuentaId" but it seems Sequelize's naming strategy detected the word "cuenta" as Latin instead of Spanish), "**createdAt**" and "**updatedAt**".
+
+### sequelizemeta
+
+This table is created automatically by Sequelize after migrating the tables from the [migrations](migrations) folder. This table's only purpose is for Sequelize to keep track of the migrations that have ran on the database.
+
 ## Routes for HTTP requests
 
-All HTTP requests to this API return JSON objects (except for `GET /`, which returns a string). All the POST, PUT and PATCH requests require JSON objects as their payload bodies.
+All HTTP requests to this API return JSON objects (except for `GET /`, which returns a string, and `GET /cuentas/:id/saldo`, which returns a number). All the POST, PUT and PATCH requests require JSON objects as their payload bodies.
 
 NOTE: "id" in the payload body JSONs of the PUT requests refer to "claveCuenta" and "claveCuentahabiente" in the MySQL tables, not the fields literally called "id" from those tables. Giving the **cuenta** and **cuentahabientes** tables an "id" field and separate "claveCuenta"/"claveCuentahabiente" fields was a request from my professor, but for the sake of simplicity I decided to shorten both to just "id" in the JSONs that have to be sent in PUT requests.
 
 ### No token required
 
 #### To get the API instructions: `GET /`
-Returns a string object.
+Returns a string.
 
 #### To log in: `POST /login`
 Body:
@@ -219,4 +241,136 @@ Response (the account holder that was just deleted):
   "updatedAt": string
 }
 ```
-NOTE: You can only delete account holders that aren't associated to any account.
+***NOTE: You can only delete account holders that aren't associated to any account.***
+
+#### Create a new account (cuenta): `POST /cuentas`
+Body ("id" has to be a non-0 and non-negative integer; "saldo" has to be a non-negative number, it will always be rounded to 2 decimal spaces; "cuentahabientes" has to be an array that contains the "claveCuentahabiente" of at least 1 account holder to associate):
+```
+{
+  "id": number,
+  "saldo": number,
+  "cuentahabientes": [number(s)]
+}
+```
+Response (the same new cuenta that was just registered but as it shows up in MySQL):
+```
+{
+  "id": number,
+  "claveCuenta": number,
+  "saldo": number,
+  "createdAt": string,
+  "updatedAt": string
+}
+```
+
+#### Get all accounts: `GET /cuentas`
+Response (an array of JSONs with the following format):
+```
+{
+  "claveCuenta": number,
+  "saldo": number,
+  "cuentahabientes": array of JSONs with the following format
+              {
+                "claveCuentahabiente": number,
+                "nombre": string,
+                "edad": number
+              }
+}
+```
+The response will be an empty array if there are no accounts.
+The array of "cuentahabientes" will be empty if there are no account holders associated to that specific account.
+
+#### Get a specific account by its id (claveCuenta): `GET /cuentas/:id`
+Response:
+```
+{
+  "claveCuenta": number,
+  "saldo": number,
+  "cuentahabientes": array of JSONs with the following format
+              {
+                "claveCuentahabiente": number,
+                "nombre": string,
+                "edad": number
+              }
+}
+```
+The array of "cuentahabientes" will be empty if there are no account holders associated.
+
+#### Get the balance of a specific account by its id (claveCuenta): `GET /cuentas/:id/saldo`
+Returns a number.
+
+#### Deposit money to the balance of an account specified by its id (claveCuenta): `PATCH /cuentas/:id/deposito`
+Body ("deposito" has to be a non-0 and non-negative number; it will always be rounded to 2 decimal spaces):
+```
+{
+  "deposito": number
+}
+```
+Response (the account on which the deposit was made):
+```
+{
+  "id": number,
+  "claveCuenta": number,
+  "saldo": number,
+  "createdAt": string,
+  "updatedAt": string
+}
+```
+
+#### Withdraw money from the balance of an account specified by its id (claveCuenta): `PATCH /cuentas/:id/retiro`
+Body ("retiro" has to be a non-0 and non-negative number; it will always be rounded to 2 decimal spaces):
+```
+{
+  "retiro": number
+}
+```
+Response (the account from which the withdrawal was made):
+```
+{
+  "id": number,
+  "claveCuenta": number,
+  "saldo": number,
+  "createdAt": string,
+  "updatedAt": string
+}
+```
+
+#### Transfer money from an account of a specific idFuente (claveCuenta) to an account of a specific idDestino (claveCuenta): `PATCH /cuentas/:idFuente/transferencia/:idDestino`
+Body ("transferencia" has to be a non-0, non-negative number that also isn't greater than the source account's available balance; it will always be rounded to 2 decimal spaces):
+```
+{
+  "transferencia": number
+}
+```
+Response (an array that contains both accounts involved in the transfer, starting with the source account):
+```
+[
+  {
+    "id": number,
+    "claveCuenta": number,
+    "saldo": number,
+    "createdAt": string,
+    "updatedAt": string
+  },
+  {
+    "id": number,
+    "claveCuenta": number,
+    "saldo": number,
+    "createdAt": string,
+    "updatedAt": string
+  }
+]
+```
+
+#### Delete a specific account by its id (claveCuenta): `DELETE /cuentas/:id`
+Response (the account that was just deleted):
+```
+{
+  "id": number,
+  "claveCuenta": number,
+  "saldo": number,
+  "createdAt": string,
+  "updatedAt": string
+}
+```
+***NOTE: You can only delete accounts that have a balance of $0.***
