@@ -41,7 +41,7 @@ Response:
 ### Token required
 All the following requests require the login token in their headers as shown below:
 ```
-Authorization: Bearer [token]
+Authorization: Bearer [token here without brackets]
 ```
 
 #### To get all login users: `GET /users`
@@ -55,10 +55,10 @@ Response (an array of JSONs with the following format):
   "updatedAt": string
 }
 ```
-The response will be an empty array instead if there are no users.
+The response will be an empty array if there are no users.
 
 #### Create a new account holder (cuentahabiente): `POST /cuentahabientes`
-Body:
+Body ("id" has to be a non-0 and non-negative integer; "edad" has to be a non-negative integer):
 ```
 {
   "id": number,
@@ -112,7 +112,7 @@ Response:
 The array of "cuentas" will be empty if there are no accounts associated.
 
 #### Change the name and age of an account holder specified by its id (claveCuentahabiente): `PUT /cuentahabientes/:id`
-Body:
+Body ("edad" has to be a non-negative integer):
 ```
 {
   "nombre": string,
@@ -132,7 +132,7 @@ Response (the same cuentahabiente that was just modified but as it shows up in M
 ```
 
 #### Change the name and/or age of an account holder specified by its id (claveCuentahabiente): `PATCH /cuentahabientes/:id`
-Body (it can include both of the keys, "nombre" and "edad", or only one of them):
+Body (it can include both of the keys, "nombre" and "edad", or only one of them; "edad" has to be a non-negative integer):
 ```
 {
   "nombre": string,
@@ -172,10 +172,51 @@ Response (an array that contains the account holder and the account that were ju
   {
     "id": number,
     "claveCuenta": number,
-    "saldo": numbher,
+    "saldo": number,
     "createdAt": string,
     "updatedAt": string
   }
 ]
 ```
 
+#### Disassociate an account from the account holder of the specified id (claveCuentahabiente): `PATCH /cuentahabientes/:id/desasocia`
+Body ("idCuenta" is the "claveCuenta" of the account to disassociate):
+```
+{
+  "idCuenta": number
+}
+```
+Response (an array that contains the account holder and the account that were just disassociated from each other):
+```
+[
+  {
+    "id": number,
+    "claveCuentahabiente": number,
+    "nombre": string,
+    "edad": number,
+    "createdAt": string,
+    "updatedAt": string
+  },
+  {
+    "id": number,
+    "claveCuenta": number,
+    "saldo": number,
+    "createdAt": string,
+    "updatedAt": string
+  }
+]
+```
+
+#### Delete a specific account holder by its id (claveCuentahabiente): `DELETE /cuentahabientes/:id`
+Response (the account holder that was just deleted):
+```
+{
+  "id": number,
+  "claveCuentahabiente": number,
+  "nombre": string,
+  "edad": number,
+  "createdAt": string,
+  "updatedAt": string
+}
+```
+NOTE: You can only delete account holders that aren't associated to any account.
